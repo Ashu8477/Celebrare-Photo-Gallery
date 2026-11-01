@@ -14,23 +14,27 @@ export default function App() {
     setSearchTerm(value);
   }, []);
 
-  const [favourites, dispatch] = useReducer(favouritesReducer, favouritesInitialState);
-
-  const handleToggleFavourite = useCallback((photoId) => {
-    dispatch({ type: 'TOGGLE_FAVOURITE', payload: photoId });
-  }, []);
-
-  useEffect(() => {
+  // Load favourites from localStorage on initial render to prevent race condition
+  // and avoid empty state overwriting saved data
+  let initialFavourites = favouritesInitialState;
+  if (typeof window !== 'undefined') {
     try {
       const raw = window.localStorage.getItem(STORAGE_KEY);
-      if (!raw) return;
-      const parsed = JSON.parse(raw);
-      if (Array.isArray(parsed)) {
-        dispatch({ type: 'SET_FAVOURITES', payload: parsed });
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (Array.isArray(parsed)) {
+          initialFavourites = parsed;
+        }
       }
     } catch (err) {
       console.warn('Could not restore favourites from LocalStorage:', err);
     }
+  }
+
+  const [favourites, dispatch] = useReducer(favouritesReducer, initialFavourites);
+
+  const handleToggleFavourite = useCallback((photoId) => {
+    dispatch({ type: 'TOGGLE_FAVOURITE', payload: photoId });
   }, []);
 
   useEffect(() => {
